@@ -1,0 +1,18 @@
+# Copied the file from the l10-task-list project
+version: "3.9"
+services:
+  mysql:
+    image: mariadb:10.8.3
+    # Below line is for Mac M1 users
+    platform: linux/arm64/v8
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - 3306:3306
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
