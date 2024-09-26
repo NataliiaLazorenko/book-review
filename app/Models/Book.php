@@ -36,23 +36,45 @@ class Book extends Model
     public function scopePopular(Builder $query, $from = null, $to = null): Builder|QueryBuilder
     {
         return $query->withCount([
-            'reviews' => function (Builder $q) use ($from, $to) {
-                if ($from && !$to) {
-                    $q->where('created_at', '>=', $from);
-                } elseif (!$from && $to) {
-                    $q->where('created_at', '<=', $to);
-                } elseif ($from && $to) {
-                    $q->whereBetween('created_at', [$from, $to]);
-                }
-            }
+            'reviews' => fn(Builder $q) => $this->dateRangeFilter($q, $from, $to)
         ])
             ->orderBy('reviews_count', 'desc');
     }
 
-    // Retrieves the highest-rated books
-    public function scopeHighestRated(Builder $query): Builder|QueryBuilder
+    // Retrieves the highest-rated books in a given time frame
+    public function scopeHighestRated(Builder $query, $from = null, $to = null): Builder|QueryBuilder
     {
-        return $query->withAvg('reviews', 'rating')
+        return $query->withAvg([
+            'reviews' => fn(Builder $q) => $this->dateRangeFilter($q, $from, $to)
+        ], 'rating')
             ->orderBy('reviews_avg_rating', 'desc');
     }
+
+    /*
+     * We use 'having' for aggregate values like 'reviews_count' instead of 'where', which is for standard columns.
+     * 'having' filters dynamically calculated aggregates, while 'where' targets existing table columns.
+     * Before calling this scope, we must first call popular() to ensure 'reviews_count' is available
+     */
+    public function scopeMinReviews(Builder $query, int $minReviews): Builder|QueryBuilder
+    {
+        return $query->having('reviews_count', '>=', $minReviews);
+    }
+
+    // Since the query is an object and objects are passed by reference, not by copy, we don’t need to return anything from this method.
+    // We are directly modifying the existing query object within the method
+    private function dateRangeFilter(Builder $query, $from = null, $to = null)
+    {
+        if ($from && !$to) {
+            $query->where('created_at', '>=', $from);
+        } elseif (!$from && $to) {
+            $query->where('created_at', '<=', $to);
+        } elseif ($from && $to) {
+            $query->whereBetween('created_at', [$from, $to]);
+        }
+    }
 }
+
+/*
+ * Query example:
+ * \App\Models\Book::highestRated('2024-06-01', '2024-08-30')->popular('2024-06-01', '2024-08-30')->minReviews(2)->get();
+ */
