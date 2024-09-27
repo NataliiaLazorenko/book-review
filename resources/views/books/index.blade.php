@@ -3,8 +3,19 @@
 @section('content')
 <h1 class="mb-10 text-2xl">Books</h1>
 
-{{-- We need a form to search using the 'title' --}}
-<form></form>
+{{-- This form allows searching by 'title'. 
+'GET' is the default method, but we're including it explicitly for clarity. 
+The current route is set as 'action' to send the form data back to the same page --}}
+<form method="GET" action="{{ route('books.index') }}" class="mb-4 flex items-center space-x-2">
+    {{-- The 'name' attribute is required to identify the input and will be included with the form submission.
+    The 'request' function is used to show the previous input value. If the form was submitted before, 
+    this input will be pre-filled with the last used filter value --}}
+    <input type="text" name="title" placeholder="Search by title" value="{{ request('title') }}" class="input h-10" />
+    <button type="submit" class="btn h-10">Search</button>
+    <!-- The simplest way to clear the form is to link to the page without query parameters -->
+    <a href="{{ route('books.index') }}" class="btn h-10">Clear</a>
+</form>
+
 <ul>
     @forelse ( $books as $book)
     <li class="mb-4">

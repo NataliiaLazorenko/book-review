@@ -12,7 +12,7 @@ class BookController extends Controller
      */
     public function index(Request $request)
     {
-        // We need 'title' to add filtering by the book title
+        // Optional 'title' parameter is used for filtering by the book title
         $title = $request->input('title');
 
         /*
