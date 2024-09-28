@@ -14,7 +14,8 @@ class BookController extends Controller
     {
         // Optional 'title' parameter is used for filtering by the book title
         $title = $request->input('title');
-
+        // Retrieve the filter using the request->input() method, and specify a default empty ('') value
+        $filter = $request->input('filter', '');
         /*
          * The 'when' method in Laravel is a useful tool for simplifying conditional queries.
          * It accepts a value (like $title) as the first argument, and a closure or arrow function as the second.
@@ -30,9 +31,20 @@ class BookController extends Controller
             $title,
             // 'title()' is a query scope we added to he Book model
             fn($query, $title) => $query->title($title)
-        )
-            ->get();
+        );
 
+        /*
+         * To implement filtering based on the filter variable, we use a match expression (similar to a switch statement but directly returns a value)
+         * and assign the result to the $books variable
+         */
+        $books = match ($filter) {
+            'popular_last_month' => $books->popularLastMonth(),
+            'popular_last_6months' => $books->popularLast6Months(),
+            'highest_rated_last_month' => $books->highestRatedLastMonth(),
+            'highest_rated_last_6months' => $books->highestRatedLast6Months(),
+            default => $books->latest(),
+        };
+        $books  = $books->get();
         /*
          * With resource controllers, we should should name views to match route names (e.g., 'books.index').
          * This is a commonly used Laravel Convention

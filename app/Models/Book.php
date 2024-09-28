@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Month;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
@@ -71,6 +72,41 @@ class Book extends Model
         } elseif ($from && $to) {
             $query->whereBetween('created_at', [$from, $to]);
         }
+    }
+
+    // The scope will return books that received the most reviews in the last month, along with their average ratings,
+    // but only for books that have received at least two reviews
+    public function scopePopularLastMonth(Builder $query): Builder|QueryBuilder
+    {
+        return $query->popular(now()->subMonth(), now())
+            ->highestRated(now()->subMonth(), now())
+            ->minReviews(2);
+    }
+
+    public function scopePopularLast6Months(Builder $query): Builder|QueryBuilder
+    {
+        return $query->popular(now()->subMonths(6), now())
+            ->highestRated(now()->subMonths(6), now())
+            ->minReviews(5);
+    }
+
+
+    /*
+     * The 'scopePopularLastMonth' and 'scopeHighestRatedLastMonth' return the average rating and count of ratings
+     * The order of these query scopes matters, as the results are primarily sorted by the first column, with subsequent columns acting as tiebreakers
+     */
+    public function scopeHighestRatedLastMonth(Builder $query): Builder|QueryBuilder
+    {
+        return $query->highestRated(now()->subMonth(), now())
+            ->popular(now()->subMonth(), now())
+            ->minReviews(2);
+    }
+
+    public function scopeHighestRatedLast6Months(Builder $query): Builder|QueryBuilder
+    {
+        return $query->highestRated(now()->subMonths(6), now())
+            ->popular(now()->subMonths(6), now())
+            ->minReviews(5);
     }
 }
 
