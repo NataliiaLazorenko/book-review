@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Book;
+// use Illuminate\Support\Facades\Cache;
 
 class BookController extends Controller
 {
@@ -44,7 +45,19 @@ class BookController extends Controller
             'highest_rated_last_6months' => $books->highestRatedLast6Months(),
             default => $books->latest(),
         };
-        $books  = $books->get();
+        // $books  = $books->get();
+
+        /*
+         * To cache data, we can use one of the following:
+         * 1. Static Cache facade
+         * 2. Global helper function
+         * Both methods return the same object and include all necessary methods
+         */
+        // $books = Cache::remember('books', 3600, fn() => $books->get());
+
+        $cacheKey = 'books:' . $filter . ':' . '$title';
+        $books = cache()->remember($cacheKey, 3600, fn() => $books->get());
+
         /*
          * With resource controllers, we should should name views to match route names (e.g., 'books.index').
          * This is a commonly used Laravel Convention
