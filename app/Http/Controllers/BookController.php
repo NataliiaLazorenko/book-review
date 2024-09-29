@@ -91,18 +91,18 @@ class BookController extends Controller
     /**
      * Display the specified resource.
      */
+    // To avoid hitting the database when caching, we shouldn't use model binding, as it already fetches the book data.
+    // This will be modified in the upcoming lectures.
     public function show(Book $book)
     {
         // The 'load' method allows us to load specific relationships of a model after the model itself has been loaded, rather than relying on lazy loading in the template.
         // This approach reduces the number of queries. However, it makes sense to eager load relationships when dealing with multiple entities (books, in our case),
         // as lazy loading would make a separate query for each entity's relationships (e.g., each book's reviews).
-
-        return view(
-            'books.show',
-            ['book' => $book->load([
-                'reviews' => fn($query) => $query->latest()
-            ])]
-        );
+        $cacheKey = 'book:' . $book->id;
+        $book = cache()->remember($cacheKey, 3600, fn() => $book->load([
+            'reviews' => fn($query) => $query->latest()
+        ]));
+        return view('books.show', ['book' => $book]);
     }
 
     /**

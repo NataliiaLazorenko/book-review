@@ -16,4 +16,11 @@ class Review extends Model
     {
         return $this->belongsTo(Book::class);
     }
+
+    // The simplest way to react to events in a model is by adding a static booted method to the model and defining event handlers inside it
+    protected static function booted()
+    {
+        static::updated(callback: fn(Review $review) => cache()->forget('book:' . $review->book_id));
+        static::deleted(fn(Review $review) => cache()->forget('book:' . $review->book_id));
+    }
 }
