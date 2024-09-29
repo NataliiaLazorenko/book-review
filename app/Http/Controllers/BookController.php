@@ -78,9 +78,18 @@ class BookController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Book $book)
     {
-        //
+        // The 'load' method allows us to load specific relationships of a model after the model itself has been loaded, rather than relying on lazy loading in the template.
+        // This approach reduces the number of queries. However, it makes sense to eager load relationships when dealing with multiple entities (books, in our case),
+        // as lazy loading would make a separate query for each entity's relationships (e.g., each book's reviews).
+
+        return view(
+            'books.show',
+            ['book' => $book->load([
+                'reviews' => fn($query) => $query->latest()
+            ])]
+        );
     }
 
     /**
