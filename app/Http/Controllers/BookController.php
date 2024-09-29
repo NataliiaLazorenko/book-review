@@ -43,7 +43,7 @@ class BookController extends Controller
             'popular_last_6months' => $books->popularLast6Months(),
             'highest_rated_last_month' => $books->highestRatedLastMonth(),
             'highest_rated_last_6months' => $books->highestRatedLast6Months(),
-            default => $books->latest(),
+            default => $books->latest()->withAvgRating()->withReviewsCount(),
         };
         // $books  = $books->get();
 
@@ -91,17 +91,26 @@ class BookController extends Controller
     /**
      * Display the specified resource.
      */
-    // To avoid hitting the database when caching, we shouldn't use model binding, as it already fetches the book data.
-    // This will be modified in the upcoming lectures.
-    public function show(Book $book)
+    // To avoid hitting the database when caching, we shouldn't use model binding, as it already fetches the book data
+    public function show(int $id)
     {
-        // The 'load' method allows us to load specific relationships of a model after the model itself has been loaded, rather than relying on lazy loading in the template.
-        // This approach reduces the number of queries. However, it makes sense to eager load relationships when dealing with multiple entities (books, in our case),
-        // as lazy loading would make a separate query for each entity's relationships (e.g., each book's reviews).
-        $cacheKey = 'book:' . $book->id;
-        $book = cache()->remember($cacheKey, 3600, fn() => $book->load([
-            'reviews' => fn($query) => $query->latest()
-        ]));
+        /*
+         * The 'load' method allows us to load specific relationships of a model after the model itself has been loaded, rather than relying on lazy loading in the template.
+         * This approach reduces the number of queries. However, it makes sense to eager load relationships when dealing with multiple entities (books, in our case),
+         * as lazy loading would make a separate query for each entity's relationships (e.g., each book's reviews).
+         * 
+         * The 'load' method is only useful for models that have already been loaded, it's an instance method.
+         * To fetch relationships along with the model in a single query, we use the 'with' method, which is a static method of a class
+         */
+        $cacheKey = 'book:' . $id;
+        // We are caching the book, not only the reviews. So we also need to reset the cache when the book changes
+        $book = cache()->remember(
+            $cacheKey,
+            3600,
+            fn() => Book::with([
+                'reviews' => fn($query) => $query->latest()
+            ])->withAvgRating()->withReviewsCount()->findOrFail($id)
+        );
         return view('books.show', ['book' => $book]);
     }
 
